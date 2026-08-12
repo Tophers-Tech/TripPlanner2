@@ -1802,7 +1802,7 @@
 async function initApp() {
     try {
         // Instant read via Google Sheet CSV export endpoint (Zero cold start)
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/YOUR_SPREADSHEET_ID/gviz/tq?tqx=out:csv&sheet=Events';
+        const csvUrl = 'https://docs.google.com/spreadsheets/d/1ZxSJw7tIyAq8l_N42GM7Q3tc6H16A3Z18REWl_pQIQU/gviz/tq?tqx=out:csv&sheet=Events';
         const response = await fetch(csvUrl);
         const csvText = await response.text();
 
