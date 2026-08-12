@@ -872,19 +872,8 @@
 
         function parseDate(dateStr) {
             if (!dateStr) return null;
-            let cleanStr = dateStr.replace(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*,\s*/i, '')
-                                  .replace(/\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*$/i, '')
-                                  .trim();
-            let parts = cleanStr.split(/[\/\-]/);
-            if (parts.length >= 2) {
-                let month = parseInt(parts[0], 10) - 1;
-                let day = parseInt(parts[1], 10);
-                let year = parts[2] ? parseInt(parts[2], 10) : new Date().getFullYear();
-                if (year < 100) year += 2000;
-                if (!isNaN(month) && !isNaN(day)) {
-                    return new Date(year, month, day);
-                }
-            }
+            let cleanStr = String(dateStr).trim();
+            // Handle ISO date strings or standard date representations safely
             let d = new Date(cleanStr);
             if (!isNaN(d.getTime())) return d;
             return null;
@@ -892,7 +881,14 @@
 
         function parseMinutes(timeStr) {
             if (!timeStr) return 0;
-            let match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+            let str = String(timeStr);
+            if (str.includes('T')) {
+                let d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    return d.getUTCHours() * 60 + d.getUTCMinutes();
+                }
+            }
+            let match = str.match(/(\d+):(\d+)\s*(AM|PM)?/i);
             if (!match) return 0;
             let hours = parseInt(match[1], 10);
             let mins = parseInt(match[2], 10);
@@ -905,6 +901,12 @@
         function parseDurationMinutes(durationStr) {
             if (!durationStr || durationStr === '#N/A') return 120;
             let str = String(durationStr).trim();
+            if (str.includes('T')) {
+                let d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    return d.getUTCHours() * 60 + d.getUTCMinutes();
+                }
+            }
             let matchColon = str.match(/(\d+):(\d+)/);
             if (matchColon) {
                 return parseInt(matchColon[1], 10) * 60 + parseInt(matchColon[2], 10);
@@ -925,8 +927,20 @@
 
         function formatTimeString(timeStr) {
             if (!timeStr) return '';
-            let match = timeStr.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
-            if (!match) return timeStr;
+            let str = String(timeStr);
+            if (str.includes('T')) {
+                let d = new Date(str);
+                if (!isNaN(d.getTime())) {
+                    let hours = d.getUTCHours();
+                    let mins = String(d.getUTCMinutes()).padStart(2, '0');
+                    let ampm = hours >= 12 ? 'PM' : 'AM';
+                    hours = hours % 12;
+                    if (hours === 0) hours = 12;
+                    return `${hours}:${mins} ${ampm}`;
+                }
+            }
+            let match = str.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+            if (!match) return str;
             let hours = match[1];
             let mins = match[2];
             let ampm = match[3] ? ` ${match[3].toUpperCase()}` : '';
@@ -948,9 +962,9 @@
         }
 
         function formatDateKey(date) {
-            let y = date.getFullYear();
-            let m = String(date.getMonth() + 1).padStart(2, '0');
-            let d = String(date.getDate()).padStart(2, '0');
+            let y = date.getUTCFullYear();
+            let m = String(date.getUTCMonth() + 1).padStart(2, '0');
+            let d = String(date.getUTCDate()).padStart(2, '0');
             return `${y}-${m}-${d}`;
         }
 
@@ -981,7 +995,7 @@
 
             for (let i = 0; i < nights; i++) {
                 let d = new Date(startDateObj);
-                d.setDate(startDateObj.getDate() + i);
+                d.setUTCDate(startDateObj.getUTCDate() + i);
                 if (formatDateKey(d) === targetDateKey) {
                     return true;
                 }
@@ -991,10 +1005,10 @@
 
         function getWeekStartDate(date) {
             let d = new Date(date);
-            let day = d.getDay();
-            let diff = d.getDate() - day;
-            let sunday = new Date(d.setDate(diff));
-            sunday.setHours(0,0,0,0);
+            let day = d.getUTCDay();
+            let diff = d.getUTCDate() - day;
+            let sunday = new Date(d.setUTCDate(diff));
+            sunday.setUTCHours(0,0,0,0);
             return sunday;
         }
 
@@ -1011,7 +1025,7 @@
                         let nights = getHotelNights(item);
                         for (let i = 1; i < nights; i++) {
                             let nextDay = new Date(d);
-                            nextDay.setDate(d.getDate() + i);
+                            nextDay.setUTCDate(d.getUTCDate() + i);
                             let ws = getWeekStartDate(nextDay);
                             weekMap.set(formatDateKey(ws), ws);
                         }
@@ -1029,10 +1043,10 @@
             const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
             const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
             
-            let dayName = days[date.getDay()];
-            let monthName = months[date.getMonth()];
-            let dayNum = date.getDate();
-            let year = date.getFullYear();
+            let dayName = days[date.getUTCDay()];
+            let monthName = months[date.getUTCMonth()];
+            let dayNum = date.getUTCDate();
+            let year = date.getUTCFullYear();
 
             let suffix = "th";
             if (dayNum === 1 || dayNum === 21 || dayNum === 31) suffix = "st";
@@ -1047,9 +1061,9 @@
             if (!dateObj) return item.date || '';
             const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-            let dayName = days[dateObj.getDay()];
-            let monthName = months[dateObj.getMonth()];
-            let dayNum = dateObj.getDate();
+            let dayName = days[dateObj.getUTCDay()];
+            let monthName = months[dateObj.getUTCMonth()];
+            let dayNum = dateObj.getUTCDate();
             return `${dayName} ${monthName} ${dayNum}`;
         }
 
@@ -1072,6 +1086,15 @@
             if (item.type === 'hotel') {
                 const nights = parseInt(rawDur, 10);
                 return (!isNaN(nights) && nights > 0) ? `Duration: ${nights} nights` : '';
+            }
+
+            if (rawDur.includes('T')) {
+                let d = new Date(rawDur);
+                if (!isNaN(d.getTime())) {
+                    let h = d.getUTCHours();
+                    let m = d.getUTCMinutes();
+                    return `Duration: ${h > 0 ? h + 'h ' : ''}${m}m`;
+                }
             }
 
             const parts = rawDur.split(':');
@@ -1179,22 +1202,15 @@
 
             const formattedDate = formatCardDate(item);
             const dateTime = item.time ? `${formattedDate} • ${formatTimeString(item.time)}` : formattedDate;
-            let meta1 = '';
-            if (item.type === 'flight') {
-                meta1 = item.bookingRef && item.bookingRef !== '#N/A' ? item.bookingRef : '';
-            } else {
-                meta1 = item.bookingRef && item.bookingRef !== '#N/A' ? item.bookingRef : '';
-            }
+            let meta1 = item.bookingRef && item.bookingRef !== '#N/A' ? item.bookingRef : '';
 
             const durationText = formatDuration(item);
             let meta2 = '';
             if (item.type === 'flight') {
                 const cleanArrTime = formatTimeString(item.flightArrival);
                 const arr = cleanArrTime ? `Arrival: ${cleanArrTime}` : '';
-                const lay = item.layover ? ` (${item.layover})` : '';
+                const lay = item.layover ? ` (${formatTimeString(item.layover)})` : '';
                 meta2 = `${arr}${lay}`;
-            } else {
-                meta2 = '';
             }
 
             const l1 = item.l1;
@@ -1253,7 +1269,7 @@
             weeks.forEach(weekStart => {
                 for (let i = 0; i < 7; i++) {
                     let currentDay = new Date(weekStart);
-                    currentDay.setDate(weekStart.getDate() + i);
+                    currentDay.setUTCDate(weekStart.getUTCDate() + i);
                     let dateKey = formatDateKey(currentDay);
 
                     const dayCell = document.createElement('div');
@@ -1262,7 +1278,7 @@
 
                     const header = document.createElement('div');
                     header.className = 'day-header';
-                    header.innerText = `${currentDay.getDate()}`;
+                    header.innerText = `${currentDay.getUTCDate()}`;
                     dayCell.appendChild(header);
 
                     const iconContainer = document.createElement('div');
@@ -1326,7 +1342,7 @@
             weeks.forEach(weekStart => {
                 for (let i = 0; i < 7; i++) {
                     let currentDay = new Date(weekStart);
-                    currentDay.setDate(weekStart.getDate() + i);
+                    currentDay.setUTCDate(weekStart.getUTCDate() + i);
                     let dateKey = formatDateKey(currentDay);
 
                     const standardEvents = sortEvents(itineraryData.filter(d => getItemDateKey(d) === dateKey && d.type !== 'hotel'));
@@ -1380,9 +1396,9 @@
             let maxTime = Math.max(...allDates);
 
             let startDate = new Date(minTime);
-            startDate.setHours(0, 0, 0, 0);
+            startDate.setUTCHours(0, 0, 0, 0);
             let endDate = new Date(maxTime);
-            endDate.setHours(23, 59, 59, 999);
+            endDate.setUTCHours(23, 59, 59, 999);
             
             let timelineStartMs = startDate.getTime();
             let timelineEndMs = endDate.getTime() + 24 * 60 * 60 * 1000;
@@ -1392,7 +1408,7 @@
             let curr = new Date(startDate);
             while (curr.getTime() <= endDate.getTime() + 24 * 60 * 60 * 1000) {
                 daysList.push(new Date(curr));
-                curr.setDate(curr.getDate() + 1);
+                curr.setUTCDate(curr.getUTCDate() + 1);
             }
 
             let timelineEvents = [];
@@ -1401,7 +1417,7 @@
                 if (!d) return;
                 
                 let startMins = parseMinutes(item.time);
-                let itemStartMs = new Date(d).setHours(0, 0, 0, 0) + startMins * 60000;
+                let itemStartMs = new Date(d).setUTCHours(0, 0, 0, 0) + startMins * 60000;
                 
                 let durMins = parseDurationMinutes(item.duration);
                 let itemEndMs = itemStartMs + durMins * 60000;
@@ -1440,7 +1456,7 @@
             `;
 
             daysList.forEach(day => {
-                html += `<div class="timeline-day-col">${day.getDate()}</div>`;
+                html += `<div class="timeline-day-col">${day.getUTCDate()}</div>`;
             });
 
             html += `
@@ -1498,7 +1514,7 @@
                     if (item.type === 'hotel') {
                         let nights = getHotelNights(item);
                         let endD = new Date(d);
-                        endD.setDate(endD.getDate() + nights);
+                        endD.setUTCDate(endD.getUTCDate() + nights);
                         allDates.push(endD.getTime());
                     }
                 }
@@ -1513,9 +1529,9 @@
             let maxTime = Math.max(...allDates);
 
             let startDate = new Date(minTime);
-            startDate.setHours(0, 0, 0, 0);
+            startDate.setUTCHours(0, 0, 0, 0);
             let endDate = new Date(maxTime);
-            endDate.setHours(23, 59, 59, 999);
+            endDate.setUTCHours(23, 59, 59, 999);
             
             let timelineStartMs = startDate.getTime();
             let timelineEndMs = endDate.getTime() + 24 * 60 * 60 * 1000;
@@ -1525,7 +1541,7 @@
             let curr = new Date(startDate);
             while (curr.getTime() <= endDate.getTime() + 24 * 60 * 60 * 1000) {
                 daysList.push(new Date(curr));
-                curr.setDate(curr.getDate() + 1);
+                curr.setUTCDate(curr.getUTCDate() + 1);
             }
 
             let timelineEvents = [];
@@ -1533,9 +1549,9 @@
                 let d = getItemDateObj(item);
                 if (!d) return;
                 
-                let itemStartMs = new Date(d).setHours(12, 0, 0, 0);
+                let itemStartMs = new Date(d).setUTCHours(12, 0, 0, 0);
                 let nights = getHotelNights(item);
-                let itemEndMs = new Date(d).setHours(12, 0, 0, 0) + nights * 24 * 60 * 60 * 1000;
+                let itemEndMs = new Date(d).setUTCHours(12, 0, 0, 0) + nights * 24 * 60 * 60 * 1000;
 
                 timelineEvents.push({
                     item: item,
@@ -1571,7 +1587,7 @@
             `;
 
             daysList.forEach(day => {
-                html += `<div class="timeline-day-col">${day.getDate()}</div>`;
+                html += `<div class="timeline-day-col">${day.getUTCDate()}</div>`;
             });
 
             html += `
@@ -1682,15 +1698,25 @@
             document.getElementById('edit-date').value = dateObj ? formatDateKey(dateObj) : '';
 
             if (eventItem.time) {
-                let timeMatch = eventItem.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-                if (timeMatch) {
-                    let hours = parseInt(timeMatch[1], 10);
-                    let mins = timeMatch[2];
-                    let ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : '';
-                    if (ampm === 'PM' && hours < 12) hours += 12;
-                    if (ampm === 'AM' && hours === 12) hours = 0;
-                    let hrStr = String(hours).padStart(2, '0');
-                    document.getElementById('edit-time-picker').value = `${hrStr}:${mins}`;
+                let str = String(eventItem.time);
+                if (str.includes('T')) {
+                    let d = new Date(str);
+                    if (!isNaN(d.getTime())) {
+                        let hr = String(d.getUTCHours()).padStart(2, '0');
+                        let mn = String(d.getUTCMinutes()).padStart(2, '0');
+                        document.getElementById('edit-time-picker').value = `${hr}:${mn}`;
+                    }
+                } else {
+                    let timeMatch = str.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                    if (timeMatch) {
+                        let hours = parseInt(timeMatch[1], 10);
+                        let mins = timeMatch[2];
+                        let ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : '';
+                        if (ampm === 'PM' && hours < 12) hours += 12;
+                        if (ampm === 'AM' && hours === 12) hours = 0;
+                        let hrStr = String(hours).padStart(2, '0');
+                        document.getElementById('edit-time-picker').value = `${hrStr}:${mins}`;
+                    }
                 }
             } else {
                 document.getElementById('edit-time-picker').value = '';
@@ -1727,12 +1753,7 @@
                 
                 let rawDate = document.getElementById('edit-date').value;
                 if (rawDate) {
-                    let p = rawDate.split('-');
-                    if (p.length === 3) {
-                        activeEditingEvent.date = `${p[1]}/${p[2]}/${p[0].slice(2)}`;
-                    } else {
-                        activeEditingEvent.date = rawDate;
-                    }
+                    activeEditingEvent.date = new Date(rawDate + 'T00:00:00.000Z').toISOString();
                     selectedDateKey = rawDate;
                 } else {
                     activeEditingEvent.date = '';
@@ -1740,13 +1761,7 @@
 
                 let timeVal = document.getElementById('edit-time-picker').value;
                 if (timeVal) {
-                    let parts = timeVal.split(':');
-                    let hr = parseInt(parts[0], 10);
-                    let mn = parts[1];
-                    let ap = hr >= 12 ? 'PM' : 'AM';
-                    hr = hr % 12;
-                    if (hr === 0) hr = 12;
-                    activeEditingEvent.time = `${hr}:${mn} ${ap}`;
+                    activeEditingEvent.time = `1899-12-30T${timeVal}:00.000Z`;
                 } else {
                     activeEditingEvent.time = '';
                 }
@@ -1831,58 +1846,61 @@
 
         const WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbzTIo4eo6nClHjBgFzqtG0bkOus7bX34ahqXDd4wEgSdpkRlyAfVaWypYVJg8ywhRe9AA/exec';
 
+        // NEW: Normalized row data function to properly parse ISO date objects and fields from the JSON backend
+        function normalizeRowData(row, index) {
+            let rawCost = row['Cost'];
+            let cleanCost = 0;
+            if (typeof rawCost === 'string') {
+                cleanCost = parseFloat(rawCost.replace(/[^0-9.-]+/g, "")) || 0;
+            } else if (typeof rawCost === 'number') {
+                cleanCost = rawCost;
+            }
+
+            let itemType = (row['Type'] || 'activity').toLowerCase().trim();
+            let itemTime = row['Time'] || '';
+
+            if (itemType === 'hotel' && (!itemTime || itemTime.trim() === '' || itemTime === '#N/A')) {
+                itemTime = '12:00 PM';
+            }
+
+            return {
+                id: `ROW_${String(index + 1).padStart(3, '0')}`,
+                rowIndex: row.rowIndex,
+                date: row['Date'] || '',
+                title: row['Title'] || '',
+                picture: row['Picture'] || '',
+                picURL: row['PicURL'] || '',
+                image: row['PicURL'] || '',
+                time: itemTime,
+                type: itemType,
+                status: row['PayStatus'] || 'UNPAID',
+                paidBy: row['Paid By'] || '',
+                cost: cleanCost,
+                bookingRef: row['Booking Reference'] || '',
+                flightNum: row['Flight #'] || '',
+                l1: row['L1'] || '',
+                l2: row['L2'] || '',
+                l3: row['L3'] || '',
+                notes: row['Notes'] || '',
+                endDate: row['EndDate'] || '',
+                flightArrival: row['Flight Arrival'] || '',
+                duration: row['Duration'] || '',
+                lat: row['Lat'] || '',
+                long: row['Long'] || '',
+                startDateTime: row['StartDateTime'] || '',
+                endDateTime: row['EndDateTime'] || '',
+                icon: row['Icon'] || '',
+                icon2: row['Icon 2'] || '',
+                layover: row['Layover'] || ''
+            };
+        }
+
         async function initApp() {
             try {
                 const response = await fetch(WEB_APP_URL);
                 const results = await response.json();
 
-                itineraryData = results.map((row, index) => {
-                    let rawCost = row['Cost'];
-                    let cleanCost = 0;
-                    if (typeof rawCost === 'string') {
-                        cleanCost = parseFloat(rawCost.replace(/[^0-9.-]+/g, "")) || 0;
-                    } else if (typeof rawCost === 'number') {
-                        cleanCost = rawCost;
-                    }
-
-                    let itemType = (row['Type'] || 'activity').toLowerCase().trim();
-                    let itemTime = row['Time'] || '';
-
-                    if (itemType === 'hotel' && (!itemTime || itemTime.trim() === '' || itemTime === '#N/A')) {
-                        itemTime = '12:00 PM';
-                    }
-
-                    return {
-                        id: `ROW_${String(index + 1).padStart(3, '0')}`,
-                        rowIndex: row.rowIndex,
-                        date: row['Date'] || '',
-                        title: row['Title'] || '',
-                        picture: row['Picture'] || '',
-                        picURL: row['PicURL'] || '',
-                        image: row['PicURL'] || '',
-                        time: itemTime,
-                        type: itemType,
-                        status: row['PayStatus'] || 'UNPAID',
-                        paidBy: row['Paid By'] || '',
-                        cost: cleanCost,
-                        bookingRef: row['Booking Reference'] || '',
-                        flightNum: row['Flight #'] || '',
-                        l1: row['L1'] || '',
-                        l2: row['L2'] || '',
-                        l3: row['L3'] || '',
-                        notes: row['Notes'] || '',
-                        endDate: row['EndDate'] || '',
-                        flightArrival: row['Flight Arrival'] || '',
-                        duration: row['Duration'] || '',
-                        lat: row['Lat'] || '',
-                        long: row['Long'] || '',
-                        startDateTime: row['StartDateTime'] || '',
-                        endDateTime: row['EndDateTime'] || '',
-                        icon: row['Icon'] || '',
-                        icon2: row['Icon 2'] || '',
-                        layover: row['Layover'] || ''
-                    };
-                });
+                itineraryData = results.map((row, index) => normalizeRowData(row, index));
 
                 defaultDateKey = itineraryData.length > 0 ? getItemDateKey(itineraryData[0]) : formatDateKey(new Date());
                 selectedDateKey = defaultDateKey;
