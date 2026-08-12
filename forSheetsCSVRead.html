@@ -1767,7 +1767,7 @@ async function saveEvent() {
         activeEditingEvent.notes = document.getElementById('edit-notes').value;
 
         // Write changes back via Apps Script Web App
-        const webAppUrl = 'YOUR_APPS_SCRIPT_WEB_APP_URL';
+        const webAppUrl = 'https://script.google.com/macros/s/AKfycbwgawLi51YmfBGsWe3JhA_gj5_aSO_sPeJdPfen3g-sUywxpoSvD8wrxXxZQu5ZaJvRnQ/exec';
         try {
             await fetch(webAppUrl, {
                 method: 'POST',
