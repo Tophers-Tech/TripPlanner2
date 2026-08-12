@@ -1,0 +1,1892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Travel Planner App</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            min-height: 100dvh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            width: 100vw;
+            max-width: 480px;
+            height: 100vh;
+            height: 100dvh;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .app-header {
+            background-color: rgba(11, 60, 93, 0.85);
+            color: white;
+            padding: 14px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+            letter-spacing: 0.5px;
+            flex-shrink: 0;
+            z-index: 20;
+        }
+
+        .views-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-view {
+            display: none;
+            height: 100%;
+            overflow-y: auto;
+            padding: 0 12px 70px 12px;
+            flex-direction: column;
+            gap: 16px;
+            scroll-behavior: smooth;
+        }
+
+        .tab-view.active {
+            display: flex;
+        }
+
+        .placeholder-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #666;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .placeholder-view h3 {
+            color: rgba(11, 60, 93, 0.85);
+            margin-bottom: 8px;
+        }
+
+        /* Calendar Styling - Modernized */
+        .sticky-calendar-wrapper {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #ffffff;
+            padding-top: 12px;
+            padding-bottom: 8px;
+            margin-left: -12px;
+            margin-right: -12px;
+            padding-left: 12px;
+            padding-right: 12px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            width: 100%;
+            padding: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        .calendar-day {
+            background-color: #ffffff;
+            border: 1px solid #f1f5f9;
+            border-radius: 6px;
+            min-height: 65px;
+            display: flex;
+            flex-direction: column;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+            overflow: hidden;
+        }
+
+        .calendar-day:hover {
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .calendar-day.selected {
+            background-color: #f0f9ff;
+            border-color: #0284c7;
+            box-shadow: 0 0 0 1px #0284c7;
+        }
+
+        .day-header {
+            background-color: #f8fafc;
+            color: #475569;
+            font-size: 10px;
+            font-weight: 700;
+            text-align: center;
+            padding: 4px 0;
+            border-bottom: 1px solid #f1f5f9;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .calendar-day.selected .day-header {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            border-bottom-color: #bae6fd;
+        }
+
+        .day-icons-container {
+            padding: 3px 2px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            flex-grow: 1;
+        }
+
+        .event-icons-flow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            justify-content: center;
+            align-content: flex-start;
+            font-size: 12px;
+            line-height: 1.1;
+        }
+
+        .lodging-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 2px;
+            font-size: 12px;
+            line-height: 1.1;
+            margin-top: auto;
+            padding-top: 2px;
+        }
+
+        /* Card Sections */
+        .day-details-section {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding-top: 8px;
+        }
+
+        .selected-date-banner, .section-title-banner {
+            font-weight: bold;
+            font-size: 14px;
+            color: rgba(11, 60, 93, 0.85);
+            border-bottom: 2px solid rgba(11, 60, 93, 0.85);
+            padding-bottom: 4px;
+            margin-top: 4px;
+        }
+
+        .details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        /* Timeline Graphic Styling */
+        .timeline-graphic-card {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 6px;
+            margin-bottom: 4px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            width: 100%;
+        }
+
+        .timeline-header-row {
+            display: flex;
+            border-bottom: 2px solid rgba(11, 60, 93, 0.85);
+            margin-bottom: 4px;
+            width: 100%;
+        }
+
+        .timeline-day-col {
+            flex: 1;
+            min-width: 0;
+            text-align: center;
+            font-size: 9px;
+            font-weight: bold;
+            color: rgba(11, 60, 93, 0.85);
+            padding: 2px 0;
+            border-right: 1px solid #e2e8f0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .timeline-day-col:last-child {
+            border-right: none;
+        }
+
+        .timeline-body-area {
+            position: relative;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        .timeline-grid-lines {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            pointer-events: none;
+            width: 100%;
+        }
+
+        .timeline-grid-col {
+            flex: 1;
+            min-width: 0;
+            border-right: 1px dashed #cbd5e1;
+        }
+
+        .timeline-grid-col:last-child {
+            border-right: none;
+        }
+
+        .timeline-bars-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            padding: 2px 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .timeline-bar {
+            position: absolute;
+            height: 10px;
+            border-radius: 3px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .timeline-bar:hover {
+            opacity: 0.9;
+        }
+
+        .timeline-bar.flight {
+            background-color: #e0f2fe;
+            border: 1px solid #0369a1;
+        }
+
+        .timeline-bar.hotel {
+            background-color: #e0f2fe;
+            border: 1px solid #0369a1;
+        }
+
+        .timeline-bar.transport {
+            background-color: #ffedd5;
+            border: 1px solid #c2410c;
+        }
+
+        /* Zero padding container ensuring image goes right to the border */
+        .detail-card {
+            background: #ffffff;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            display: flex;
+            overflow: hidden;
+            width: 100%;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            padding: 0;
+        }
+
+        .card-image {
+            width: 85px;
+            align-self: stretch;
+            object-fit: cover;
+            border-right: 1px solid #e2e8f0;
+            cursor: pointer;
+            transition: opacity 0.2s;
+            flex-shrink: 0;
+            margin: 0;
+        }
+
+        .card-image:hover {
+            opacity: 0.85;
+        }
+
+        .card-image-placeholder {
+            width: 85px;
+            align-self: stretch;
+            background-color: #f8fafc;
+            border-right: 1px solid #e2e8f0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 500;
+            text-align: center;
+            padding: 4px;
+            flex-shrink: 0;
+            user-select: none;
+            transition: opacity 0.2s;
+            margin: 0;
+        }
+
+        .card-image-placeholder:hover {
+            opacity: 0.85;
+        }
+
+        .card-info {
+            padding: 4px 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 1px;
+            flex: 1;
+            min-width: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .card-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            line-height: 1.1;
+            min-height: 14px;
+        }
+
+        .card-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex: 1;
+        }
+
+        .card-icon {
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .card-date-time {
+            font-size: 11px;
+            color: #e65100;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-duration {
+            font-size: 11px;
+            font-weight: 700;
+            color: rgba(11, 60, 93, 0.85);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-meta-text {
+            font-size: 11px;
+            color: #64748b;
+            text-align: right;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .card-links-row {
+            display: flex;
+            gap: 16px;
+        }
+
+        /* Colored Badge Styles for Links */
+        .badge {
+            font-size: 9px;
+            font-weight: 700;
+            padding: 1px 5px;
+            border-radius: 3px;
+            text-transform: uppercase;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .badge-link-active {
+            background-color: #e0f2fe;
+            color: #075985;
+            border: 1px solid #bae6fd;
+        }
+
+        .badge-link-active:hover {
+            background-color: #bae6fd;
+        }
+
+        .badge-link-empty {
+            background-color: #f3f4f6;
+            color: #9ca3af;
+            border: 1px solid #e5e7eb;
+            cursor: default;
+        }
+
+        /* Modern Glass Bottom Nav */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 58px;
+            background: rgba(11, 60, 93, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+        }
+
+        .nav-btn {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        .nav-btn:hover {
+            background-color: rgba(255, 255, 255, 0.08);
+        }
+
+        .nav-btn:active {
+            transform: scale(0.95);
+        }
+
+        .nav-btn.active {
+            background: rgba(7, 42, 66, 0.6);
+            box-shadow: inset 0 3px 0 #3292ff;
+        }
+
+        /* Glass SVG Icon Style */
+        .nav-icon {
+            width: 22px;
+            height: 22px;
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.65);
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+            transition: stroke 0.2s, filter 0.2s, transform 0.2s;
+        }
+
+        .nav-btn.active .nav-icon {
+            stroke: #ffffff;
+            stroke-width: 2.2;
+            filter: drop-shadow(0 0 6px rgba(50, 146, 255, 0.7));
+            transform: translateY(-1px);
+        }
+
+        .nav-btn:hover .nav-icon {
+            stroke: rgba(255, 255, 255, 0.9);
+        }
+
+        /* Compact Edit Tab Styling with tighter padding and gaps */
+        .edit-body {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            background-color: #ffffff;
+            align-items: center;
+            width: 100%;
+            padding-bottom: 20px;
+            font-size: 10px;
+        }
+
+        .image-preview-container {
+            width: 100%;
+            aspect-ratio: 16 / 8;
+            border-radius: 4px;
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #eaeaea;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 1px;
+        }
+
+        .image-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .edit-image-placeholder {
+            width: 100%;
+            height: 100%;
+            background-color: #e2e8f0;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .edit-field-row {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+
+        .edit-field-label {
+            width: 110px;
+            font-size: 10px;
+            font-weight: bold;
+            color: #555;
+            text-transform: uppercase;
+            flex-shrink: 0;
+        }
+
+        .edit-field-row input, 
+        .edit-field-row select, 
+        .edit-field-row textarea {
+            flex: 1;
+            padding: 2px 4px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            font-size: 10px;
+            outline: none;
+            background-color: #fff;
+            color: #111;
+        }
+
+        #edit-title {
+            font-weight: bold;
+        }
+
+        .edit-field-row textarea {
+            resize: vertical;
+            min-height: 30px;
+        }
+
+        .edit-field-row input:focus, 
+        .edit-field-row select:focus, 
+        .edit-field-row textarea:focus {
+            border-color: rgba(11, 60, 93, 0.85);
+            box-shadow: 0 0 0 2px rgba(11, 60, 93, 0.15);
+        }
+
+        .link-action-btn {
+            width: 110px;
+            height: 20px;
+            background-color: #fff;
+            border: 1px solid rgba(11, 60, 93, 0.85);
+            color: rgba(11, 60, 93, 0.85);
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+            transition: background-color 0.2s;
+        }
+
+        .link-action-btn:hover {
+            background-color: #e6f0fa;
+        }
+
+        .edit-actions-container {
+            display: flex;
+            gap: 8px;
+            width: 100%;
+            margin-top: 4px;
+        }
+
+        .btn-form-action {
+            flex: 1;
+            padding: 4px;
+            border: none;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        .btn-form-action.cancel {
+            background-color: #e65100;
+            color: #ffffff;
+        }
+
+        .btn-form-action.save {
+            background-color: rgba(11, 60, 93, 0.85);
+            color: #ffffff;
+        }
+
+        .btn-form-action:hover {
+            opacity: 0.9;
+        }
+    </style>
+    <!-- Include Papa Parse Library for CSV parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="app-header">Travel Planner</div>
+
+        <div class="views-container">
+            <!-- Calendar Section -->
+            <div class="tab-view active" id="view-calendar">
+                <div class="sticky-calendar-wrapper">
+                    <div class="calendar-grid" id="calendar"></div>
+                </div>
+                <div class="details-list" id="all-details-container"></div>
+            </div>
+
+            <!-- Flights Section -->
+            <div class="tab-view" id="view-flights" style="padding-top: 12px;">
+                <div id="flight-transport-timeline-container"></div>
+                <div class="section-title-banner" style="margin-top: 12px;">Flights</div>
+                <div class="details-list" id="flights-container"></div>
+                <div class="section-title-banner" style="margin-top: 12px;">Transport</div>
+                <div class="details-list" id="transport-container"></div>
+            </div>
+
+            <!-- Hotels Section -->
+            <div class="tab-view" id="view-hotels" style="padding-top: 12px;">
+                <div id="hotel-timeline-container"></div>
+                <div class="section-title-banner" style="margin-top: 12px;">Hotels</div>
+                <div class="details-list" id="hotels-container"></div>
+            </div>
+
+            <!-- Activities Section -->
+            <div class="tab-view" id="view-activities" style="padding-top: 12px;">
+                <div class="section-title-banner">Activities</div>
+                <div class="details-list" id="activities-container"></div>
+            </div>
+
+            <!-- Costs Section -->
+            <div class="tab-view" id="view-costs" style="padding-top: 12px;">
+                <div class="placeholder-view">
+                    <h3>💰 Costs & Expenses</h3>
+                    <p>Expense tracking and cost summaries have been disabled.</p>
+                </div>
+            </div>
+
+            <!-- To-Do Section -->
+            <div class="tab-view" id="view-todo" style="padding-top: 12px;">
+                <div class="placeholder-view">
+                    <h3>✅ To-Do List</h3>
+                    <p>Pre-trip tasks and reminders will appear here.</p>
+                </div>
+            </div>
+
+            <!-- To-Pack Section -->
+            <div class="tab-view" id="view-topack" style="padding-top: 12px;">
+                <div class="placeholder-view">
+                    <h3>🧳 To-Pack List</h3>
+                    <p>Luggage checklist items will appear here.</p>
+                </div>
+            </div>
+
+            <!-- Edit Form Section -->
+            <div class="tab-view" id="view-edit" style="padding-top: 12px;">
+                <div class="edit-body">
+                    <div class="image-preview-container" id="edit-preview-wrapper">
+                        <!-- Dynamically populated preview box or image -->
+                    </div>
+
+                    <div class="edit-field-row" style="margin-bottom: 10px;">
+                        <input type="text" id="edit-picURL" placeholder="https://..." oninput="updateImagePreview(this.value)" style="width: 100%; height: 12px;">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">TITLE</label>
+                        <input type="text" id="edit-title" placeholder="Enter Title">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">DATE</label>
+                        <input type="date" id="edit-date">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">TIME</label>
+                        <div style="display: flex; gap: 4px; flex: 1;">
+                            <input type="time" id="edit-time-picker" style="flex: 1;">
+                        </div>
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">TYPE</label>
+                        <select id="edit-type">
+						    <option value=""></option>
+                            <option value="transport">Transport</option>
+                            <option value="flight">Flight</option>
+                            <option value="hotel">Hotel</option>
+                            <option value="activity">Activity</option>
+                            <option value="service">Service</option>
+                        </select>
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">PAY STATUS</label>
+                        <select id="edit-status">
+                            <option value=""></option>
+                            <option value="PAID">PAID</option>
+                            <option value="UNPAID">UNPAID</option>
+                        </select>
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">PAID BY</label>
+                        <select id="edit-paidBy">
+                            <option value=""></option>
+                            <option value="Chris">Chris</option>
+                            <option value="Claire">Claire</option>
+                        </select>
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">COST (CAD)</label>
+                        <input type="text" id="edit-cost" placeholder="$0.00">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">BOOKING REF</label>
+                        <input type="text" id="edit-bookingRef" placeholder="Booking Reference">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <button type="button" class="link-action-btn" onclick="openFlightSearch()">FLIGHT NUMBER</button>
+                        <input type="text" id="edit-flightNum" placeholder="Flight #">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <button type="button" class="link-action-btn" onclick="openLink('edit-l1')">L1</button>
+                        <input type="text" id="edit-l1" placeholder="Paste link...">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <button type="button" class="link-action-btn" onclick="openLink('edit-l2')">L2</button>
+                        <input type="text" id="edit-l2" placeholder="Paste link...">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <button type="button" class="link-action-btn" onclick="openLink('edit-l3')">L3</button>
+                        <input type="text" id="edit-l3" placeholder="Paste link...">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">DURATION</label>
+                        <input type="text" id="edit-duration" placeholder="e.g. 2:30">
+                    </div>
+
+                    <div class="edit-field-row">
+                        <label class="edit-field-label">NOTES</label>
+                        <textarea id="edit-notes" placeholder="Enter notes..."></textarea>
+                    </div>
+
+                    <div class="edit-actions-container">
+                        <button type="button" class="btn-form-action cancel" onclick="closeEditPage()">Cancel</button>
+                        <button type="button" class="btn-form-action save" onclick="saveEvent()">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modern Glass Bottom Navigation Bar with Vector Icons -->
+        <div class="bottom-nav">
+            <!-- Calendar Icon -->
+            <div class="nav-btn active" title="Calendar" onclick="switchTab('calendar', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            </div>
+            <!-- Flights Icon -->
+            <div class="nav-btn" title="Flights" onclick="switchTab('flights', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M17.8 19.2L16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.5 1.2c-.2.4 0 .9.4 1.1l5.5 3-3.2 3.2-2.1-.7c-.4-.1-.8.1-1 .4l-.6.9c-.3.4-.2 1 .2 1.2l4.1 2.1 2.1 4.1c.2.4.8.5 1.2.2l.9-.6c.3-.2.5-.6.4-1l-.7-2.1 3.2-3.2 3 5.5c.2.4.7.6 1.1.4l1.2-.5c.4-.2.6-.6.5-1.1z"></path></svg>
+            </div>
+            <!-- Hotels Icon -->
+            <div class="nav-btn" title="Hotels" onclick="switchTab('hotels', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            </div>
+            <!-- Activities Icon -->
+            <div class="nav-btn" title="Activities" onclick="switchTab('activities', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+            </div>
+            <!-- Costs Icon -->
+            <div class="nav-btn" title="Costs" onclick="switchTab('costs', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+            </div>
+            <!-- To-Do Icon -->
+            <div class="nav-btn" title="To-Do" onclick="switchTab('todo', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+            </div>
+            <!-- To-Pack Icon -->
+            <div class="nav-btn" title="To-Pack" onclick="switchTab('topack', this)">
+                <svg class="nav-icon" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- App Logic Script -->
+    <script>
+        let itineraryData = [];
+        let currentTab = 'calendar';
+        let returnTab = 'calendar';
+
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            let cleanStr = dateStr.replace(/^(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*,\s*/i, '')
+                                  .replace(/\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*$/i, '')
+                                  .trim();
+            let parts = cleanStr.split(/[\/\-]/);
+            if (parts.length >= 2) {
+                let month = parseInt(parts[0], 10) - 1;
+                let day = parseInt(parts[1], 10);
+                let year = parts[2] ? parseInt(parts[2], 10) : new Date().getFullYear();
+                if (year < 100) year += 2000;
+                if (!isNaN(month) && !isNaN(day)) {
+                    return new Date(year, month, day);
+                }
+            }
+            let d = new Date(cleanStr);
+            if (!isNaN(d.getTime())) return d;
+            return null;
+        }
+
+        function parseMinutes(timeStr) {
+            if (!timeStr) return 0;
+            let match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+            if (!match) return 0;
+            let hours = parseInt(match[1], 10);
+            let mins = parseInt(match[2], 10);
+            let ampm = match[3] ? match[3].toUpperCase() : '';
+            if (ampm === 'PM' && hours < 12) hours += 12;
+            if (ampm === 'AM' && hours === 12) hours = 0;
+            return hours * 60 + mins;
+        }
+
+        function parseDurationMinutes(durationStr) {
+            if (!durationStr || durationStr === '#N/A') return 120;
+            let str = String(durationStr).trim();
+            let matchColon = str.match(/(\d+):(\d+)/);
+            if (matchColon) {
+                return parseInt(matchColon[1], 10) * 60 + parseInt(matchColon[2], 10);
+            }
+            let matchH = str.match(/(\d+)\s*h/i);
+            let matchM = str.match(/(\d+)\s*m/i);
+            let h = matchH ? parseInt(matchH[1], 10) : 0;
+            let m = matchM ? parseInt(matchM[1], 10) : 0;
+            if (h > 0 || m > 0) {
+                return h * 60 + m;
+            }
+            let num = parseFloat(str);
+            if (!isNaN(num)) {
+                return Math.round(num * 60);
+            }
+            return 120;
+        }
+
+        function formatTimeString(timeStr) {
+            if (!timeStr) return '';
+            let match = timeStr.match(/(\d+):(\d+)(?::\d+)?\s*(AM|PM)?/i);
+            if (!match) return timeStr;
+            let hours = match[1];
+            let mins = match[2];
+            let ampm = match[3] ? ` ${match[3].toUpperCase()}` : '';
+            return `${hours}:${mins}${ampm}`;
+        }
+
+        function sortEvents(events) {
+            return events.sort((a, b) => {
+                let dateA = getItemDateObj(a);
+                let dateB = getItemDateObj(b);
+                let timeA = dateA ? dateA.getTime() : 0;
+                let timeB = dateB ? dateB.getTime() : 0;
+                if (timeA !== timeB) return timeA - timeB;
+                
+                let minsA = parseMinutes(a.time);
+                let minsB = parseMinutes(b.time);
+                return minsA - minsB;
+            });
+        }
+
+        function formatDateKey(date) {
+            let y = date.getFullYear();
+            let m = String(date.getMonth() + 1).padStart(2, '0');
+            let d = String(date.getDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+        }
+
+        function getItemDateObj(item) {
+            if (!item || !item.date) return null;
+            return parseDate(item.date);
+        }
+
+        function getItemDateKey(item) {
+            let d = getItemDateObj(item);
+            return d ? formatDateKey(d) : null;
+        }
+
+        function getHotelNights(item) {
+            if (item.type !== 'hotel') return 1;
+            const rawDur = String(item.duration || '').trim();
+            const nights = parseInt(rawDur, 10);
+            if (!isNaN(nights) && nights > 0) {
+                return nights;
+            }
+            return 1;
+        }
+
+        function hotelCoversDate(hotelItem, targetDateKey) {
+            const startDateObj = getItemDateObj(hotelItem);
+            if (!startDateObj) return false;
+            const nights = getHotelNights(hotelItem);
+
+            for (let i = 0; i < nights; i++) {
+                let d = new Date(startDateObj);
+                d.setDate(startDateObj.getDate() + i);
+                if (formatDateKey(d) === targetDateKey) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function getWeekStartDate(date) {
+            let d = new Date(date);
+            let day = d.getDay();
+            let diff = d.getDate() - day;
+            let sunday = new Date(d.setDate(diff));
+            sunday.setHours(0,0,0,0);
+            return sunday;
+        }
+
+        function getActiveWeeks() {
+            let weekMap = new Map();
+            itineraryData.forEach(item => {
+                let d = getItemDateObj(item);
+                if (d) {
+                    let weekStart = getWeekStartDate(d);
+                    let key = formatDateKey(weekStart);
+                    weekMap.set(key, weekStart);
+                    
+                    if (item.type === 'hotel') {
+                        let nights = getHotelNights(item);
+                        for (let i = 1; i < nights; i++) {
+                            let nextDay = new Date(d);
+                            nextDay.setDate(d.getDate() + i);
+                            let ws = getWeekStartDate(nextDay);
+                            weekMap.set(formatDateKey(ws), ws);
+                        }
+                    }
+                }
+            });
+            let weeks = Array.from(weekMap.values()).sort((a, b) => a - b);
+            if (weeks.length === 0) {
+                weeks = [getWeekStartDate(new Date())];
+            }
+            return weeks;
+        }
+
+        function formatFullDate(date) {
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+            
+            let dayName = days[date.getDay()];
+            let monthName = months[date.getMonth()];
+            let dayNum = date.getDate();
+            let year = date.getFullYear();
+
+            let suffix = "th";
+            if (dayNum === 1 || dayNum === 21 || dayNum === 31) suffix = "st";
+            else if (dayNum === 2 || dayNum === 22) suffix = "nd";
+            else if (dayNum === 3 || dayNum === 23) suffix = "rd";
+
+            return `${dayName}, ${monthName} ${dayNum}${suffix}, ${year}`;
+        }
+
+        function formatCardDate(item) {
+            let dateObj = getItemDateObj(item);
+            if (!dateObj) return item.date || '';
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            let dayName = days[dateObj.getDay()];
+            let monthName = months[dateObj.getMonth()];
+            let dayNum = dateObj.getDate();
+            return `${dayName} ${monthName} ${dayNum}`;
+        }
+
+        function getCategoryIcon(item) {
+            if (item.icon && item.icon !== '#N/A') return item.icon;
+            if (item.type === 'hotel') return '🏠';
+            if (item.type === 'flight') return '✈️';
+            if (item.type === 'activity') return '🚩';
+            if (item.type === 'transport') return '🚕';
+            return '🚩';
+        }
+
+        function formatDuration(item) {
+            if (!item || !item.duration) return '';
+            const rawDur = String(item.duration).trim();
+            if (!rawDur || rawDur === '0' || rawDur === '0:00' || rawDur === '00:00' || rawDur === '#N/A') {
+                return '';
+            }
+
+            if (item.type === 'hotel') {
+                const nights = parseInt(rawDur, 10);
+                return (!isNaN(nights) && nights > 0) ? `Duration: ${nights} nights` : '';
+            }
+
+            const parts = rawDur.split(':');
+            if (parts.length === 2) {
+                const hours = parseInt(parts[0], 10);
+                const mins = parseInt(parts[1], 10);
+                if ((isNaN(hours) || hours === 0) && (isNaN(mins) || mins === 0)) {
+                    return '';
+                }
+                return `Duration: ${hours > 0 ? hours + 'h ' : ''}${mins}m`;
+            }
+
+            return `Duration: ${rawDur}`;
+        }
+
+        function isValidLink(url) {
+            return url && url !== '#N/A' && url.trim() !== '' && url.trim() !== 'Paste link...';
+        }
+
+        let defaultDateKey = '';
+        let selectedDateKey = '';
+
+        const calendarElement = document.getElementById('calendar');
+        const allDetailsContainer = document.getElementById('all-details-container');
+        const flightsContainer = document.getElementById('flights-container');
+        const transportContainer = document.getElementById('transport-container');
+        const hotelsContainer = document.getElementById('hotels-container');
+        const activitiesContainer = document.getElementById('activities-container');
+
+        let activeEditingEvent = null;
+
+        function switchTab(tabId, element, updateHash = true) {
+            if (tabId !== 'edit') {
+                returnTab = tabId;
+            }
+            currentTab = tabId;
+
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-view').forEach(view => view.classList.remove('active'));
+
+            if (!element) {
+                const navMapping = { 'calendar': 0, 'flights': 1, 'hotels': 2, 'activities': 3, 'costs': 4, 'todo': 5, 'topack': 6 };
+                if (navMapping[tabId] !== undefined) {
+                    const btn = document.querySelectorAll('.nav-btn')[navMapping[tabId]];
+                    if (btn) btn.classList.add('active');
+                }
+            } else {
+                element.classList.add('active');
+            }
+
+            const activeView = document.getElementById(`view-${tabId}`);
+            if (activeView) activeView.classList.add('active');
+
+            if (tabId === 'edit') {
+                const picUrlInput = document.getElementById('edit-picURL');
+                if (picUrlInput) {
+                    updateImagePreview(picUrlInput.value);
+                }
+            }
+
+            if (updateHash) {
+                if (tabId === 'calendar') {
+                    window.location.hash = `day-${selectedDateKey}`;
+                } else if (tabId === 'edit') {
+                    window.location.hash = 'edit';
+                } else {
+                    window.location.hash = tabId;
+                }
+            }
+        }
+
+        function createCard(item) {
+            const card = document.createElement('div');
+            card.className = 'detail-card';
+
+            const imageUrl = item.picURL || item.image;
+            let imageElement;
+
+            if (imageUrl && imageUrl.trim() !== '' && imageUrl !== '#N/A') {
+                imageElement = document.createElement('img');
+                imageElement.src = imageUrl;
+                imageElement.alt = item.title || 'Activity Image';
+                imageElement.className = 'card-image';
+                imageElement.onclick = () => openEditPage(item);
+                
+                imageElement.onerror = function() {
+                    const placeholderDiv = document.createElement('div');
+                    placeholderDiv.className = 'card-image-placeholder';
+                    placeholderDiv.innerText = 'No Image';
+                    placeholderDiv.onclick = () => openEditPage(item);
+                    card.replaceChild(placeholderDiv, imageElement);
+                };
+            } else {
+                imageElement = document.createElement('div');
+                imageElement.className = 'card-image-placeholder';
+                imageElement.innerText = 'No Image';
+                imageElement.onclick = () => openEditPage(item);
+            }
+
+            const info = document.createElement('div');
+            info.className = 'card-info';
+
+            const title = item.title || 'Untitled';
+            const icon = getCategoryIcon(item);
+
+            const formattedDate = formatCardDate(item);
+            const dateTime = item.time ? `${formattedDate} • ${formatTimeString(item.time)}` : formattedDate;
+            let meta1 = '';
+            if (item.type === 'flight') {
+                meta1 = item.bookingRef && item.bookingRef !== '#N/A' ? item.bookingRef : '';
+            } else {
+                meta1 = item.bookingRef && item.bookingRef !== '#N/A' ? item.bookingRef : '';
+            }
+
+            const durationText = formatDuration(item);
+            let meta2 = '';
+            if (item.type === 'flight') {
+                const cleanArrTime = formatTimeString(item.flightArrival);
+                const arr = cleanArrTime ? `Arrival: ${cleanArrTime}` : '';
+                const lay = item.layover ? ` (${item.layover})` : '';
+                meta2 = `${arr}${lay}`;
+            } else {
+                meta2 = '';
+            }
+
+            const l1 = item.l1;
+            const l2 = item.l2;
+            const l3 = item.l3;
+
+            const renderLinkBadge = (label, url) => {
+                if (isValidLink(url)) {
+                    return `<a href="${url}" target="_self" class="badge badge-link-active" onclick="event.stopPropagation();">${label}</a>`;
+                }
+                return `<span class="badge badge-link-empty">${label}</span>`;
+            };
+
+            let meta3 = '';
+            if (item.type === 'flight') {
+                if (item.flightNum && item.flightNum !== '#N/A' && item.flightNum.trim() !== '') {
+                    const flightSearchUrl = `https://www.google.com/search?q=${encodeURIComponent(item.flightNum.trim())}%20Flight`;
+                    meta3 = `<a href="${flightSearchUrl}" target="_self" class="badge badge-link-active" onclick="event.stopPropagation();">${item.flightNum}</a>`;
+                } else {
+                    meta3 = `<span class="badge badge-link-empty">Flight #</span>`;
+                }
+            }
+
+            info.innerHTML = `
+                <div class="card-row">
+                    <span class="card-title">${title}</span>
+                    <span class="card-icon">${icon}</span>
+                </div>
+                <div class="card-row">
+                    <span class="card-date-time">${dateTime}</span>
+                    <span class="card-meta-text">${meta1}</span>
+                </div>
+                <div class="card-row">
+                    <span class="card-duration">${durationText}</span>
+                    <span class="card-meta-text">${meta2}</span>
+                </div>
+                <div class="card-row">
+                    <div class="card-links-row">
+                        ${renderLinkBadge('L1', l1)}
+                        ${renderLinkBadge('L2', l2)}
+                        ${renderLinkBadge('L3', l3)}
+                    </div>
+                    <span class="card-meta-text">${meta3}</span>
+                </div>
+            `;
+
+            card.appendChild(imageElement);
+            card.appendChild(info);
+            return card;
+        }
+
+        function buildCalendar() {
+            calendarElement.innerHTML = '';
+            const weeks = getActiveWeeks();
+
+            weeks.forEach(weekStart => {
+                for (let i = 0; i < 7; i++) {
+                    let currentDay = new Date(weekStart);
+                    currentDay.setDate(weekStart.getDate() + i);
+                    let dateKey = formatDateKey(currentDay);
+
+                    const dayCell = document.createElement('div');
+                    dayCell.className = `calendar-day ${dateKey === selectedDateKey ? 'selected' : ''}`;
+                    dayCell.onclick = () => selectDay(dateKey, true, true);
+
+                    const header = document.createElement('div');
+                    header.className = 'day-header';
+                    header.innerText = `${currentDay.getDate()}`;
+                    dayCell.appendChild(header);
+
+                    const iconContainer = document.createElement('div');
+                    iconContainer.className = 'day-icons-container';
+
+                    const dayEvents = sortEvents(itineraryData.filter(d => getItemDateKey(d) === dateKey));
+                    const standardEvents = dayEvents.filter(d => d.type !== 'hotel');
+                    const coveringHotels = itineraryData.filter(d => d.type === 'hotel' && hotelCoversDate(d, dateKey));
+
+                    if (standardEvents.length > 0) {
+                        const flowRow = document.createElement('div');
+                        flowRow.className = 'event-icons-flow';
+                        standardEvents.forEach(item => {
+                            const span = document.createElement('span');
+                            span.innerText = (item.icon && item.icon !== '#N/A') ? item.icon : '🚩';
+                            flowRow.appendChild(span);
+                        });
+                        iconContainer.appendChild(flowRow);
+                    }
+
+                    if (coveringHotels.length > 0) {
+                        const lodgingRow = document.createElement('div');
+                        lodgingRow.className = 'lodging-row';
+                        coveringHotels.forEach(hotelEvent => {
+                            const hotelSpan = document.createElement('span');
+                            hotelSpan.innerText = (hotelEvent.icon && hotelEvent.icon !== '#N/A') ? hotelEvent.icon : '🏠';
+                            lodgingRow.appendChild(hotelSpan);
+                        });
+                        iconContainer.appendChild(lodgingRow);
+                    }
+
+                    dayCell.appendChild(iconContainer);
+                    calendarElement.appendChild(dayCell);
+                }
+            });
+        }
+
+        function selectDay(dateKey, smooth = true, updateHash = true) {
+            selectedDateKey = dateKey;
+            buildCalendar();
+
+            const container = document.getElementById('view-calendar');
+            const targetSection = document.getElementById(`day-section-${dateKey}`);
+            const stickyWrapper = container.querySelector('.sticky-calendar-wrapper');
+
+            if (targetSection && container) {
+                const stickyHeight = stickyWrapper ? stickyWrapper.offsetHeight : 110;
+                const topPos = targetSection.offsetTop - stickyHeight - 5;
+                container.scrollTo({ top: topPos, behavior: smooth ? 'smooth' : 'auto' });
+            }
+
+            if (updateHash) {
+                window.location.hash = `day-${dateKey}`;
+            }
+        }
+
+        function renderAllDetails() {
+            allDetailsContainer.innerHTML = '';
+            const weeks = getActiveWeeks();
+
+            weeks.forEach(weekStart => {
+                for (let i = 0; i < 7; i++) {
+                    let currentDay = new Date(weekStart);
+                    currentDay.setDate(weekStart.getDate() + i);
+                    let dateKey = formatDateKey(currentDay);
+
+                    const standardEvents = sortEvents(itineraryData.filter(d => getItemDateKey(d) === dateKey && d.type !== 'hotel'));
+                    const coveringHotels = sortEvents(itineraryData.filter(d => d.type === 'hotel' && hotelCoversDate(d, dateKey)));
+                    const events = [...standardEvents, ...coveringHotels];
+
+                    if (events.length > 0) {
+                        const section = document.createElement('div');
+                        section.className = 'day-details-section';
+                        section.id = `day-section-${dateKey}`;
+
+                        const banner = document.createElement('div');
+                        banner.className = 'selected-date-banner';
+                        banner.innerText = formatFullDate(currentDay);
+                        section.appendChild(banner);
+
+                        const list = document.createElement('div');
+                        list.className = 'details-list';
+                        events.forEach(item => list.appendChild(createCard(item)));
+                        section.appendChild(list);
+
+                        allDetailsContainer.appendChild(section);
+                    }
+                }
+            });
+        }
+
+        function renderFlightTransportTimeline() {
+            const container = document.getElementById('flight-transport-timeline-container');
+            if (!container) return;
+
+            const relevantItems = itineraryData.filter(d => d.type === 'flight' || d.type === 'transport');
+            
+            if (relevantItems.length === 0) {
+                container.innerHTML = `<div style="font-size:12px; color:#666; padding:8px; font-style:italic;">No flights or transport scheduled.</div>`;
+                return;
+            }
+
+            let allDates = [];
+            itineraryData.forEach(item => {
+                let d = getItemDateObj(item);
+                if (d) allDates.push(d.getTime());
+            });
+
+            if (allDates.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let minTime = Math.min(...allDates);
+            let maxTime = Math.max(...allDates);
+
+            let startDate = new Date(minTime);
+            startDate.setHours(0, 0, 0, 0);
+            let endDate = new Date(maxTime);
+            endDate.setHours(23, 59, 59, 999);
+            
+            let timelineStartMs = startDate.getTime();
+            let timelineEndMs = endDate.getTime() + 24 * 60 * 60 * 1000;
+            let totalSpanMs = timelineEndMs - timelineStartMs;
+
+            let daysList = [];
+            let curr = new Date(startDate);
+            while (curr.getTime() <= endDate.getTime() + 24 * 60 * 60 * 1000) {
+                daysList.push(new Date(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            let timelineEvents = [];
+            relevantItems.forEach(item => {
+                let d = getItemDateObj(item);
+                if (!d) return;
+                
+                let startMins = parseMinutes(item.time);
+                let itemStartMs = new Date(d).setHours(0, 0, 0, 0) + startMins * 60000;
+                
+                let durMins = parseDurationMinutes(item.duration);
+                let itemEndMs = itemStartMs + durMins * 60000;
+
+                timelineEvents.push({
+                    item: item,
+                    title: item.title || (item.type === 'flight' ? 'Flight' : 'Transport'),
+                    type: item.type,
+                    startMs: itemStartMs,
+                    endMs: itemEndMs
+                });
+            });
+
+            timelineEvents.sort((a, b) => a.startMs - b.startMs);
+
+            let assignedTracks = [];
+            let maxTrack = 0;
+            timelineEvents.forEach(ev => {
+                let track = 0;
+                while (true) {
+                    let collision = assignedTracks.some(e => e.track === track && !(ev.endMs <= e.startMs || ev.startMs >= e.endMs));
+                    if (!collision) {
+                        assignedTracks.push({ ...ev, track });
+                        if (track > maxTrack) maxTrack = track;
+                        break;
+                    }
+                    track++;
+                }
+            });
+
+            let bodyHeight = Math.max(16, (maxTrack + 1) * 14 + 4);
+
+            let html = `
+                <div class="timeline-graphic-card">
+                    <div class="timeline-header-row">
+            `;
+
+            daysList.forEach(day => {
+                html += `<div class="timeline-day-col">${day.getDate()}</div>`;
+            });
+
+            html += `
+                    </div>
+                    <div class="timeline-body-area" style="height: ${bodyHeight}px;">
+                        <div class="timeline-grid-lines">
+            `;
+
+            daysList.forEach(() => {
+                html += `<div class="timeline-grid-col"></div>`;
+            });
+
+            html += `
+                        </div>
+                        <div class="timeline-bars-container">
+            `;
+
+            assignedTracks.forEach(ev => {
+                let leftPct = Math.max(0, Math.min(100, ((ev.startMs - timelineStartMs) / totalSpanMs) * 100));
+                let rightPct = Math.max(0, Math.min(100, ((ev.endMs - timelineStartMs) / totalSpanMs) * 100));
+                let widthPct = Math.max(1.5, rightPct - leftPct);
+                let topPx = ev.track * 14 + 2;
+                let barClass = ev.type === 'flight' ? 'flight' : 'transport';
+
+                html += `
+                    <div class="timeline-bar ${barClass}" style="left: ${leftPct}%; width: ${widthPct}%; top: ${topPx}px;" onclick="openEditPageById('${ev.item.id}')" title="${ev.title}"></div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderHotelTimeline() {
+            const container = document.getElementById('hotel-timeline-container');
+            if (!container) return;
+
+            const hotelItems = itineraryData.filter(d => d.type === 'hotel');
+            
+            if (hotelItems.length === 0) {
+                container.innerHTML = `<div style="font-size:12px; color:#666; padding:8px; font-style:italic;">No hotels scheduled.</div>`;
+                return;
+            }
+
+            let allDates = [];
+            itineraryData.forEach(item => {
+                let d = getItemDateObj(item);
+                if (d) {
+                    allDates.push(d.getTime());
+                    if (item.type === 'hotel') {
+                        let nights = getHotelNights(item);
+                        let endD = new Date(d);
+                        endD.setDate(endD.getDate() + nights);
+                        allDates.push(endD.getTime());
+                    }
+                }
+            });
+
+            if (allDates.length === 0) {
+                container.innerHTML = '';
+                return;
+            }
+
+            let minTime = Math.min(...allDates);
+            let maxTime = Math.max(...allDates);
+
+            let startDate = new Date(minTime);
+            startDate.setHours(0, 0, 0, 0);
+            let endDate = new Date(maxTime);
+            endDate.setHours(23, 59, 59, 999);
+            
+            let timelineStartMs = startDate.getTime();
+            let timelineEndMs = endDate.getTime() + 24 * 60 * 60 * 1000;
+            let totalSpanMs = timelineEndMs - timelineStartMs;
+
+            let daysList = [];
+            let curr = new Date(startDate);
+            while (curr.getTime() <= endDate.getTime() + 24 * 60 * 60 * 1000) {
+                daysList.push(new Date(curr));
+                curr.setDate(curr.getDate() + 1);
+            }
+
+            let timelineEvents = [];
+            hotelItems.forEach(item => {
+                let d = getItemDateObj(item);
+                if (!d) return;
+                
+                let itemStartMs = new Date(d).setHours(12, 0, 0, 0);
+                let nights = getHotelNights(item);
+                let itemEndMs = new Date(d).setHours(12, 0, 0, 0) + nights * 24 * 60 * 60 * 1000;
+
+                timelineEvents.push({
+                    item: item,
+                    title: item.title || 'Hotel',
+                    type: 'hotel',
+                    startMs: itemStartMs,
+                    endMs: itemEndMs
+                });
+            });
+
+            timelineEvents.sort((a, b) => a.startMs - b.startMs);
+
+            let assignedTracks = [];
+            let maxTrack = 0;
+            timelineEvents.forEach(ev => {
+                let track = 0;
+                while (true) {
+                    let collision = assignedTracks.some(e => e.track === track && !(ev.endMs <= e.startMs || ev.startMs >= e.endMs));
+                    if (!collision) {
+                        assignedTracks.push({ ...ev, track });
+                        if (track > maxTrack) maxTrack = track;
+                        break;
+                    }
+                    track++;
+                }
+            });
+
+            let bodyHeight = Math.max(16, (maxTrack + 1) * 14 + 4);
+
+            let html = `
+                <div class="timeline-graphic-card">
+                    <div class="timeline-header-row">
+            `;
+
+            daysList.forEach(day => {
+                html += `<div class="timeline-day-col">${day.getDate()}</div>`;
+            });
+
+            html += `
+                    </div>
+                    <div class="timeline-body-area" style="height: ${bodyHeight}px;">
+                        <div class="timeline-grid-lines">
+            `;
+
+            daysList.forEach(() => {
+                html += `<div class="timeline-grid-col"></div>`;
+            });
+
+            html += `
+                        </div>
+                        <div class="timeline-bars-container">
+            `;
+
+            assignedTracks.forEach(ev => {
+                let leftPct = Math.max(0, Math.min(100, ((ev.startMs - timelineStartMs) / totalSpanMs) * 100));
+                let rightPct = Math.max(0, Math.min(100, ((ev.endMs - timelineStartMs) / totalSpanMs) * 100));
+                let widthPct = Math.max(1.5, rightPct - leftPct);
+                let topPx = ev.track * 14 + 2;
+
+                html += `
+                    <div class="timeline-bar hotel" style="left: ${leftPct}%; width: ${widthPct}%; top: ${topPx}px;" onclick="openEditPageById('${ev.item.id}')" title="${ev.title}"></div>
+                `;
+            });
+
+            html += `
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            container.innerHTML = html;
+        }
+
+        function renderFilteredTabs() {
+            renderFlightTransportTimeline();
+            renderHotelTimeline();
+            flightsContainer.innerHTML = '';
+            if (transportContainer) transportContainer.innerHTML = '';
+            hotelsContainer.innerHTML = '';
+            activitiesContainer.innerHTML = '';
+
+            sortEvents([...itineraryData]).filter(d => d.type === 'flight').forEach(item => flightsContainer.appendChild(createCard(item)));
+            if (transportContainer) {
+                sortEvents([...itineraryData]).filter(d => d.type === 'transport').forEach(item => transportContainer.appendChild(createCard(item)));
+            }
+            sortEvents([...itineraryData]).filter(d => d.type === 'hotel').forEach(item => hotelsContainer.appendChild(createCard(item)));
+            sortEvents([...itineraryData]).filter(d => d.type === 'activity' || d.type === 'service').forEach(item => activitiesContainer.appendChild(createCard(item)));
+        }
+
+        function openEditPageById(id) {
+            const item = itineraryData.find(d => d.id === id);
+            if (item) openEditPage(item);
+        }
+
+        function updateImagePreview(url) {
+            const previewContainer = document.getElementById('edit-preview-wrapper');
+            const trimmedUrl = url ? url.trim() : '';
+
+            if (trimmedUrl !== '' && trimmedUrl !== '#N/A') {
+                previewContainer.innerHTML = `<img src="${trimmedUrl}" alt="Item Image Preview" onerror="this.onerror=null; this.parentNode.innerHTML='<div class=\'edit-image-placeholder\'>No Image</div>';">`;
+            } else {
+                previewContainer.innerHTML = `<div class="edit-image-placeholder">No Image</div>`;
+            }
+        }
+
+        function openLink(inputId) {
+            const url = document.getElementById(inputId).value.trim();
+            if (url && url !== 'Paste link...') {
+                let finalUrl = url;
+                if (!finalUrl.startsWith('http://') && !finalUrl.startsWith('https://')) {
+                    finalUrl = 'https://' + finalUrl;
+                }
+                window.location.href = finalUrl;
+            } else {
+                alert('Please enter a valid link URL first.');
+            }
+        }
+
+        function openFlightSearch() {
+            const flightNum = document.getElementById('edit-flightNum').value.trim();
+            if (flightNum && flightNum !== 'Flight #') {
+                window.location.href = `https://www.google.com/search?q=${encodeURIComponent(flightNum)}%20Flight`;
+            } else {
+                alert('Please enter a valid flight number first.');
+            }
+        }
+
+        function openEditPage(eventItem) {
+            activeEditingEvent = eventItem;
+            returnTab = currentTab;
+
+            let itemDateKey = getItemDateKey(eventItem);
+            if (itemDateKey) {
+                selectedDateKey = itemDateKey;
+            }
+
+            const currentPicUrl = eventItem.picURL || eventItem.image || '';
+            document.getElementById('edit-picURL').value = currentPicUrl;
+            updateImagePreview(currentPicUrl);
+
+            document.getElementById('edit-title').value = eventItem.title || '';
+            
+            let dateObj = parseDate(eventItem.date);
+            document.getElementById('edit-date').value = dateObj ? formatDateKey(dateObj) : '';
+
+            if (eventItem.time) {
+                let timeMatch = eventItem.time.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+                if (timeMatch) {
+                    let hours = parseInt(timeMatch[1], 10);
+                    let mins = timeMatch[2];
+                    let ampm = timeMatch[3] ? timeMatch[3].toUpperCase() : '';
+                    if (ampm === 'PM' && hours < 12) hours += 12;
+                    if (ampm === 'AM' && hours === 12) hours = 0;
+                    let hrStr = String(hours).padStart(2, '0');
+                    document.getElementById('edit-time-picker').value = `${hrStr}:${mins}`;
+                }
+            } else {
+                document.getElementById('edit-time-picker').value = '';
+            }
+
+            document.getElementById('edit-type').value = eventItem.type || 'transport';
+            document.getElementById('edit-status').value = (eventItem.status || '').toUpperCase() === 'PAID' ? 'PAID' : ((eventItem.status || '').toUpperCase() === 'UNPAID' ? 'UNPAID' : '');
+            document.getElementById('edit-paidBy').value = eventItem.paidBy || '';
+            document.getElementById('edit-cost').value = eventItem.cost ? '$' + eventItem.cost.toFixed(2) : '$0.00';
+            document.getElementById('edit-bookingRef').value = eventItem.bookingRef || '';
+            document.getElementById('edit-flightNum').value = eventItem.flightNum || '';
+            document.getElementById('edit-l1').value = eventItem.l1 || '';
+            document.getElementById('edit-l2').value = eventItem.l2 || '';
+            document.getElementById('edit-l3').value = eventItem.l3 || '';
+            document.getElementById('edit-duration').value = eventItem.duration || '';
+            document.getElementById('edit-notes').value = eventItem.notes || '';
+
+            switchTab('edit', null, true);
+        }
+
+        function closeEditPage() {
+            activeEditingEvent = null;
+            switchTab(returnTab, null, true);
+            if (returnTab === 'calendar') {
+                setTimeout(() => selectDay(selectedDateKey, false, true), 50);
+            }
+        }
+
+        function saveEvent() {
+            if (activeEditingEvent) {
+                activeEditingEvent.picURL = document.getElementById('edit-picURL').value;
+                activeEditingEvent.image = activeEditingEvent.picURL;
+                activeEditingEvent.title = document.getElementById('edit-title').value;
+                
+                let rawDate = document.getElementById('edit-date').value;
+                if (rawDate) {
+                    let p = rawDate.split('-');
+                    if (p.length === 3) {
+                        activeEditingEvent.date = `${p[1]}/${p[2]}/${p[0].slice(2)}`;
+                    } else {
+                        activeEditingEvent.date = rawDate;
+                    }
+                    selectedDateKey = rawDate;
+                } else {
+                    activeEditingEvent.date = '';
+                }
+
+                let timeVal = document.getElementById('edit-time-picker').value;
+                if (timeVal) {
+                    let parts = timeVal.split(':');
+                    let hr = parseInt(parts[0], 10);
+                    let mn = parts[1];
+                    let ap = hr >= 12 ? 'PM' : 'AM';
+                    hr = hr % 12;
+                    if (hr === 0) hr = 12;
+                    activeEditingEvent.time = `${hr}:${mn} ${ap}`;
+                } else {
+                    activeEditingEvent.time = '';
+                }
+
+                activeEditingEvent.type = document.getElementById('edit-type').value;
+                activeEditingEvent.status = document.getElementById('edit-status').value;
+                activeEditingEvent.paidBy = document.getElementById('edit-paidBy').value;
+                
+                const costStr = document.getElementById('edit-cost').value.replace('$', '');
+                activeEditingEvent.cost = parseFloat(costStr) || 0;
+                
+                activeEditingEvent.bookingRef = document.getElementById('edit-bookingRef').value;
+                activeEditingEvent.flightNum = document.getElementById('edit-flightNum').value;
+                activeEditingEvent.l1 = document.getElementById('edit-l1').value;
+                activeEditingEvent.l2 = document.getElementById('edit-l2').value;
+                activeEditingEvent.l3 = document.getElementById('edit-l3').value;
+                activeEditingEvent.duration = document.getElementById('edit-duration').value;
+                activeEditingEvent.notes = document.getElementById('edit-notes').value;
+
+                buildCalendar();
+                renderAllDetails();
+                renderFilteredTabs();
+            }
+            closeEditPage();
+        }
+
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.replace('#', '');
+            if (!hash) return;
+
+            if (hash === 'edit') {
+                if (currentTab !== 'edit') {
+                    switchTab('edit', null, false);
+                }
+            } else if (hash.startsWith('day-')) {
+                const dateKey = hash.replace('day-', '');
+                switchTab('calendar', null, false);
+                selectDay(dateKey, false, false);
+            } else if (['flights', 'hotels', 'activities', 'costs', 'todo', 'topack'].includes(hash)) {
+                switchTab(hash, null, false);
+            }
+        });
+
+        window.addEventListener('pageshow', () => {
+            if (currentTab === 'edit') {
+                const picUrlInput = document.getElementById('edit-picURL');
+                if (picUrlInput) {
+                    updateImagePreview(picUrlInput.value);
+                }
+            }
+        });
+
+        async function initApp() {
+            try {
+                const csvUrl = 'https://docs.google.com/spreadsheets/d/1ZxSJw7tIyAq8l_N42GM7Q3tc6H16A3Z18REWl_pQIQU/gviz/tq?tqx=out:csv&sheet=Events';
+                const response = await fetch(csvUrl);
+                const csvText = await response.text();
+
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        itineraryData = results.data.map((row, index) => {
+                            let rawCost = row['Cost'];
+                            let cleanCost = 0;
+                            if (typeof rawCost === 'string') {
+                                cleanCost = parseFloat(rawCost.replace(/[^0-9.-]+/g, "")) || 0;
+                            } else if (typeof rawCost === 'number') {
+                                cleanCost = rawCost;
+                            }
+
+                            let itemType = (row['Type'] || 'activity').toLowerCase().trim();
+                            let itemTime = row['Time'] || '';
+
+                            if (itemType === 'hotel' && (!itemTime || itemTime.trim() === '' || itemTime === '#N/A')) {
+                                itemTime = '12:00 PM';
+                            }
+
+                            return {
+                                id: `ROW_${String(index + 1).padStart(3, '0')}`,
+                                date: row['Date'] || '',
+                                title: row['Title'] || '',
+                                picture: row['Picture'] || '',
+                                picURL: row['PicURL'] || '',
+                                image: row['PicURL'] || '',
+                                time: itemTime,
+                                type: itemType,
+                                status: row['PayStatus'] || 'UNPAID',
+                                paidBy: row['Paid By'] || '',
+                                cost: cleanCost,
+                                bookingRef: row['Booking Reference'] || '',
+                                flightNum: row['Flight #'] || '',
+                                l1: row['L1'] || '',
+                                l2: row['L2'] || '',
+                                l3: row['L3'] || '',
+                                notes: row['Notes'] || '',
+                                endDate: row['EndDate'] || '',
+                        
+                                flightArrival: row['Flight Arrival'] || '',
+                                duration: row['Duration'] || '',
+                                lat: row['Lat'] || '',
+                                long: row['Long'] || '',
+                                startDateTime: row['StartDateTime'] || '',
+                                endDateTime: row['EndDateTime'] || '',
+                                icon: row['Icon'] || '',
+                                icon2: row['Icon 2'] || '',
+                                layover: row['Layover'] || ''
+                            };
+                        });
+
+                        defaultDateKey = itineraryData.length > 0 ? getItemDateKey(itineraryData[0]) : formatDateKey(new Date());
+                        selectedDateKey = defaultDateKey;
+
+                        buildCalendar();
+                        renderAllDetails();
+                        renderFilteredTabs();
+
+                        const initialHash = window.location.hash.replace('#', '');
+                        if (initialHash === 'edit') {
+                            switchTab('edit', null, false);
+                        } else if (initialHash.startsWith('day-')) {
+                            const dateKey = initialHash.replace('day-', '');
+                            switchTab('calendar', null, false);
+                            selectDay(dateKey, false, false);
+                        } else if (['flights', 'hotels', 'activities', 'costs', 'todo', 'topack'].includes(initialHash)) {
+                            switchTab(initialHash, null, false);
+                        } else {
+                            selectDay(selectedDateKey, false, true);
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Error parsing CSV:', error);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading CSV from Gist:', error);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
