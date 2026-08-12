@@ -1719,72 +1719,8 @@
             }
         }
 
-async function saveEvent() {
-    if (activeEditingEvent) {
-        activeEditingEvent.picURL = document.getElementById('edit-picURL').value;
-        activeEditingEvent.image = activeEditingEvent.picURL;
-        activeEditingEvent.title = document.getElementById('edit-title').value;
-        
-        let rawDate = document.getElementById('edit-date').value;
-        if (rawDate) {
-            let p = rawDate.split('-');
-            if (p.length === 3) {
-                activeEditingEvent.date = `${p[1]}/${p[2]}/${p[0].slice(2)}`;
-            } else {
-                activeEditingEvent.date = rawDate;
-            }
-            selectedDateKey = rawDate;
-        } else {
-            activeEditingEvent.date = '';
-        }
-
-        let timeVal = document.getElementById('edit-time-picker').value;
-        if (timeVal) {
-            let parts = timeVal.split(':');
-            let hr = parseInt(parts[0], 10);
-            let mn = parts[1];
-            let ap = hr >= 12 ? 'PM' : 'AM';
-            hr = hr % 12;
-            if (hr === 0) hr = 12;
-            activeEditingEvent.time = `${hr}:${mn} ${ap}`;
-        } else {
-            activeEditingEvent.time = '';
-        }
-
-        activeEditingEvent.type = document.getElementById('edit-type').value;
-        activeEditingEvent.status = document.getElementById('edit-status').value;
-        activeEditingEvent.paidBy = document.getElementById('edit-paidBy').value;
-        
-        const costStr = document.getElementById('edit-cost').value.replace('$', '');
-        activeEditingEvent.cost = parseFloat(costStr) || 0;
-        
-        activeEditingEvent.bookingRef = document.getElementById('edit-bookingRef').value;
-        activeEditingEvent.flightNum = document.getElementById('edit-flightNum').value;
-        activeEditingEvent.l1 = document.getElementById('edit-l1').value;
-        activeEditingEvent.l2 = document.getElementById('edit-l2').value;
-        activeEditingEvent.l3 = document.getElementById('edit-l3').value;
-        activeEditingEvent.duration = document.getElementById('edit-duration').value;
-        activeEditingEvent.notes = document.getElementById('edit-notes').value;
-
-        // Write changes back via Apps Script Web App
-        const webAppUrl = 'https://script.google.com/macros/s/AKfycbwgawLi51YmfBGsWe3JhA_gj5_aSO_sPeJdPfen3g-sUywxpoSvD8wrxXxZQu5ZaJvRnQ/exec';
-        try {
-            await fetch(webAppUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(activeEditingEvent)
-            });
-        } catch (err) {
-            console.error('Error saving to Google Sheet:', err);
-        }
-
-        buildCalendar();
-        renderAllDetails();
-        renderFilteredTabs();
-    }
-    closeEditPage();
-}            if (activeEditingEvent) {
+        async function saveEvent() {
+            if (activeEditingEvent) {
                 activeEditingEvent.picURL = document.getElementById('edit-picURL').value;
                 activeEditingEvent.image = activeEditingEvent.picURL;
                 activeEditingEvent.title = document.getElementById('edit-title').value;
@@ -1830,6 +1766,19 @@ async function saveEvent() {
                 activeEditingEvent.duration = document.getElementById('edit-duration').value;
                 activeEditingEvent.notes = document.getElementById('edit-notes').value;
 
+                // Write changes back via Apps Script Web App
+                const webAppUrl = 'https://script.google.com/macros/s/AKfycbwgawLi51YmfBGsWe3JhA_gj5_aSO_sPeJdPfen3g-sUywxpoSvD8wrxXxZQu5ZaJvRnQ/exec';
+                try {
+                    await fetch(webAppUrl, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(activeEditingEvent)
+                    });
+                } catch (err) {
+                    console.error('Error saving to Google Sheet:', err);
+                }
+
                 buildCalendar();
                 renderAllDetails();
                 renderFilteredTabs();
@@ -1863,92 +1812,92 @@ async function saveEvent() {
             }
         });
 
-async function initApp() {
-    try {
-        // Instant read via Google Sheet CSV export endpoint (Zero cold start)
-        const csvUrl = 'https://docs.google.com/spreadsheets/d/1ZxSJw7tIyAq8l_N42GM7Q3tc6H16A3Z18REWl_pQIQU/gviz/tq?tqx=out:csv&sheet=Events';
-        const response = await fetch(csvUrl);
-        const csvText = await response.text();
+        async function initApp() {
+            try {
+                // Instant read via Google Sheet CSV export endpoint (Zero cold start)
+                const csvUrl = 'https://docs.google.com/spreadsheets/d/1ZxSJw7tIyAq8l_N42GM7Q3tc6H16A3Z18REWl_pQIQU/gviz/tq?tqx=out:csv&sheet=Events';
+                const response = await fetch(csvUrl);
+                const csvText = await response.text();
 
-        Papa.parse(csvText, {
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                itineraryData = results.data.map((row, index) => {
-                    let rawCost = row['Cost'];
-                    let cleanCost = 0;
-                    if (typeof rawCost === 'string') {
-                        cleanCost = parseFloat(rawCost.replace(/[^0-9.-]+/g, "")) || 0;
-                    } else if (typeof rawCost === 'number') {
-                        cleanCost = rawCost;
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        itineraryData = results.data.map((row, index) => {
+                            let rawCost = row['Cost'];
+                            let cleanCost = 0;
+                            if (typeof rawCost === 'string') {
+                                cleanCost = parseFloat(rawCost.replace(/[^0-9.-]+/g, "")) || 0;
+                            } else if (typeof rawCost === 'number') {
+                                cleanCost = rawCost;
+                            }
+
+                            let itemType = (row['Type'] || 'activity').toLowerCase().trim();
+                            let itemTime = row['Time'] || '';
+
+                            if (itemType === 'hotel' && (!itemTime || itemTime.trim() === '' || itemTime === '#N/A')) {
+                                itemTime = '12:00 PM';
+                            }
+
+                            return {
+                                id: `ROW_${String(index + 1).padStart(3, '0')}`,
+                                date: row['Date'] || '',
+                                title: row['Title'] || '',
+                                picture: row['Picture'] || '',
+                                picURL: row['PicURL'] || '',
+                                image: row['PicURL'] || '',
+                                time: itemTime,
+                                type: itemType,
+                                status: row['PayStatus'] || 'UNPAID',
+                                paidBy: row['Paid By'] || '',
+                                cost: cleanCost,
+                                bookingRef: row['Booking Reference'] || '',
+                                flightNum: row['Flight #'] || '',
+                                l1: row['L1'] || '',
+                                l2: row['L2'] || '',
+                                l3: row['L3'] || '',
+                                notes: row['Notes'] || '',
+                                endDate: row['EndDate'] || '',
+                                flightArrival: row['Flight Arrival'] || '',
+                                duration: row['Duration'] || '',
+                                lat: row['Lat'] || '',
+                                long: row['Long'] || '',
+                                startDateTime: row['StartDateTime'] || '',
+                                endDateTime: row['EndDateTime'] || '',
+                                icon: row['Icon'] || '',
+                                icon2: row['Icon 2'] || '',
+                                layover: row['Layover'] || ''
+                            };
+                        });
+
+                        defaultDateKey = itineraryData.length > 0 ? getItemDateKey(itineraryData[0]) : formatDateKey(new Date());
+                        selectedDateKey = defaultDateKey;
+
+                        buildCalendar();
+                        renderAllDetails();
+                        renderFilteredTabs();
+
+                        const initialHash = window.location.hash.replace('#', '');
+                        if (initialHash === 'edit') {
+                            switchTab('edit', null, false);
+                        } else if (initialHash.startsWith('day-')) {
+                            const dateKey = initialHash.replace('day-', '');
+                            switchTab('calendar', null, false);
+                            selectDay(dateKey, false, false);
+                        } else if (['flights', 'hotels', 'activities', 'costs', 'todo', 'topack'].includes(initialHash)) {
+                            switchTab(initialHash, null, false);
+                        } else {
+                            selectDay(selectedDateKey, false, true);
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Error parsing Google Sheet CSV:', error);
                     }
-
-                    let itemType = (row['Type'] || 'activity').toLowerCase().trim();
-                    let itemTime = row['Time'] || '';
-
-                    if (itemType === 'hotel' && (!itemTime || itemTime.trim() === '' || itemTime === '#N/A')) {
-                        itemTime = '12:00 PM';
-                    }
-
-                    return {
-                        id: `ROW_${String(index + 1).padStart(3, '0')}`,
-                        date: row['Date'] || '',
-                        title: row['Title'] || '',
-                        picture: row['Picture'] || '',
-                        picURL: row['PicURL'] || '',
-                        image: row['PicURL'] || '',
-                        time: itemTime,
-                        type: itemType,
-                        status: row['PayStatus'] || 'UNPAID',
-                        paidBy: row['Paid By'] || '',
-                        cost: cleanCost,
-                        bookingRef: row['Booking Reference'] || '',
-                        flightNum: row['Flight #'] || '',
-                        l1: row['L1'] || '',
-                        l2: row['L2'] || '',
-                        l3: row['L3'] || '',
-                        notes: row['Notes'] || '',
-                        endDate: row['EndDate'] || '',
-                        flightArrival: row['Flight Arrival'] || '',
-                        duration: row['Duration'] || '',
-                        lat: row['Lat'] || '',
-                        long: row['Long'] || '',
-                        startDateTime: row['StartDateTime'] || '',
-                        endDateTime: row['EndDateTime'] || '',
-                        icon: row['Icon'] || '',
-                        icon2: row['Icon 2'] || '',
-                        layover: row['Layover'] || ''
-                    };
                 });
-
-                defaultDateKey = itineraryData.length > 0 ? getItemDateKey(itineraryData[0]) : formatDateKey(new Date());
-                selectedDateKey = defaultDateKey;
-
-                buildCalendar();
-                renderAllDetails();
-                renderFilteredTabs();
-
-                const initialHash = window.location.hash.replace('#', '');
-                if (initialHash === 'edit') {
-                    switchTab('edit', null, false);
-                } else if (initialHash.startsWith('day-')) {
-                    const dateKey = initialHash.replace('day-', '');
-                    switchTab('calendar', null, false);
-                    selectDay(dateKey, false, false);
-                } else if (['flights', 'hotels', 'activities', 'costs', 'todo', 'topack'].includes(initialHash)) {
-                    switchTab(initialHash, null, false);
-                } else {
-                    selectDay(selectedDateKey, false, true);
-                }
-            },
-            error: function(error) {
-                console.error('Error parsing Google Sheet CSV:', error);
+            } catch (error) {
+                console.error('Error fetching Google Sheet CSV:', error);
             }
-        });
-    } catch (error) {
-        console.error('Error fetching Google Sheet CSV:', error);
-    }
-}
+        }
 
         window.addEventListener('DOMContentLoaded', initApp);
     </script>
